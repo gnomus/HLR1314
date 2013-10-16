@@ -6,7 +6,7 @@ pointer: objectfiles
 helloworld: objectfiles
 	gcc -o helloworld.x helloworld.o
 	
-objectfiles: pointer.c
+objectfiles:
 	gcc -c $(wildcard *.c)
 
 clean:
