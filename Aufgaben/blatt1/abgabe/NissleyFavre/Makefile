@@ -1,12 +1,15 @@
-all: pointer
+all: pointer helloworld
 	
-pointer: pointer.o
-	gcc -o pointer pointer.o
+pointer: objectfiles
+	gcc -o pointer.x pointer.o
+
+helloworld: objectfiles
+	gcc -o helloworld.x helloworld.o
 	
-pointer.o: pointer.c
-	gcc -c pointer.c
+objectfiles: pointer.c
+	gcc -c $(wildcard *.c)
 
 clean:
-	rm -f pointer
+	rm -f *.x
 	rm -f *.o
 	rm -f *~
