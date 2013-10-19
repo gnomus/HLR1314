@@ -3,3 +3,14 @@
 2.) Das Archiv ist kleiner geworden, da zusätzliche Informationen entfernt wurden, dafür kann nicht auf einzelne dateien zugegriffen werden, die dateien werden aneinandergehängt
 
 3.) Ja, ist möglich: tar -czf testarchiv.tar testarchiv; z sorgt für Komprimierung mit gzip
+
+Bewertung:
+
+Das Aufgabenblatt lies sich leicht bearbeiten und war ein guter Einstieg um die folgenden Aufgaben bearbeiten zu können.
+
+Es wäre gut wenn auf dem Blatt noch gestanden hätte wie man sich vom Cluster abmeldet.
+
+Es war eine gute Idee die ausführlichere Einführung in C nur für diejenigen zu machen die sie gebrauchen konnten.
+
+Bei der Vorlesung kann man gut zuhören und sie ist verständlich. 
+
