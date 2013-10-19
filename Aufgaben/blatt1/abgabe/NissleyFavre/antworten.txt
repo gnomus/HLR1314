@@ -1,0 +1,5 @@
+1.) cd ist in bash enthalten, man findet es auf der manpage unter shell builtin commandos. Will man cd trotzdem finden, kann man man -k cd eingeben, dabei werden alle manpages nach cd durchsucht.
+
+2.) Das Archiv ist kleiner geworden, da zusätzliche Informationen entfernt wurden, dafür kann nicht auf einzelne dateien zugegriffen werden, die dateien werden aneinandergehängt
+
+3.) Ja, ist möglich: tar -czf testarchiv.tar testarchiv; z sorgt für Komprimierung mit gzip
