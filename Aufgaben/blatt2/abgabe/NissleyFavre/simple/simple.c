@@ -24,8 +24,9 @@ mistake2 ()
 int *
 mistake3 ()
 {
-  int mistake2_ = 0;
-  int *buf = (int *) &mistake2;
+  int mistake2_ = 0; 
+  //int *buf = (int *) &mistake2;
+  int *buf = malloc (sizeof (char) * 1);  
   buf[0] = 3;
   return buf;
 }
@@ -52,7 +53,12 @@ main (void)
 
   /* mhh muss hier noch etwas gefreed werden? */
   /* Fügen sie hier die korrekten aufrufe von free() ein */
-  free (p[1]);			/* welcher Pointer war das doch gleich?, TODO: Fixme... :-) */
+  //free (p[1]);			/* welcher Pointer war das doch gleich?, TODO: Fixme... :-) */
+
+  free (*p[0]);
+  free (*p[1]);
+  free (p[2]);
+  free (p[3]);
 
   return 0;
 }
