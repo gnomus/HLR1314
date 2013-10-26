@@ -16,7 +16,7 @@ mistake1 ()
 int *
 mistake2 ()
 {
-  int *buf = malloc (sizeof (char) * 4);
+  int *buf = (int *) malloc (sizeof (int) * 3);
   buf[2] = 2;
   return buf;
 }
@@ -24,9 +24,9 @@ mistake2 ()
 int *
 mistake3 ()
 {
-  int mistake2_ = 0; 
+  //int mistake2_ = 0; 
   //int *buf = (int *) &mistake2;
-  int *buf = malloc (sizeof (char) * 1);  
+  int *buf = (int *) malloc (sizeof (int));  
   buf[0] = 3;
   return buf;
 }
@@ -34,9 +34,9 @@ mistake3 ()
 int *
 mistake4 ()
 {
-  int *buf = malloc (sizeof (char) * 4);
+  int *buf = (int *) malloc (sizeof (int) * 5);
   buf[4] = 4;
-  free (buf);
+  //free (buf);
   return buf;
 }
 
