@@ -1,0 +1,5 @@
+Fehler 1: Zeile 27-29
+Speicher richtig allocated
+
+Fehler 2: Zeile 55
+Speicher richtig freigeben
