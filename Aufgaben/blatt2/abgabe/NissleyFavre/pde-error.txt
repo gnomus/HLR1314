@@ -10,17 +10,17 @@ Zeile: 166
 Problem: Der Speicher für M wird nicht freigegeben
 Lösung: free(M);
 
-Fehler 3: 
+Fehler 3:
 Zeile: 169
 Problem: Matrix wird vor Matrix[0] freigegeben, so dass auf Matrix[0] und Matrix[1] keine pointer mehr existieren und sie deshalb nicht freigegeben werden können
-Lösung:  
+Lösung:
  if (Matrix[1] != 0)
     free (Matrix[1]);
   if (Matrix[0] != 0)
     free (Matrix[0]);
   free (Matrix);
 
-Fehler4: 
+Fehler4:
 Zeile: 235
 Problem: Es wird auf einen nicht existenten Speicher zugegriffen, da m2 und i vertauscht waren und m2 nur Werte von 1 oder 2 annehmen kann
 Lösung:
