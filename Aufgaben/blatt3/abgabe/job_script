@@ -1,0 +1,8 @@
+#!/bin/sh
+
+#SBATCH -p compute
+#SBATCH -N 4
+#SBATCH -n 4
+#SBATCH --output timescript.out
+
+srun timescript
