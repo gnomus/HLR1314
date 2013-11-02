@@ -1,0 +1,17 @@
+Zeit ohne Optimierung: 41s
+
+erste Optimierung: 
+getResiduum() wird nur in calculate() aufgerufen, daher kann die Funktion in calculate() reingezogen werden. Dadurch werden die Funktionsaufrufe gespart.
+Zeit nach erster Optimierung: 32s
+
+zweite Optimierung:
+Die Matrix wird als ein Array gespeichert in dem die Zeilen der Matrix hintereinander liegen. Läuft man also bei der Berechnung die Zeilen hintereinander ab, muss im Speicher nicht mehr von einem Bereich in den anderen gesprungen werden. Dazu muss man die Reihenfolge der geschachtelten Schleife ändern. 
+Zeit nach der zweiten Optimierung: 24s
+
+dritte Optimierung:
+Der Compiler kann Funktionen inlinen und Schleifen aufrollen, wodurch weniger Sprünge gemacht werden müssen. Dazu gibt man -O3 beim compiler-aufruf an.
+Zeit nach der dritten Optimierung: 3,4s
+
+vierte Optimierung:
+Bei der Berechnung des residuums kann eine Multiplikation eingespart werden, indem man direkt durch 4 teilt und den letzten Wert dann nicht *4 rechnen muss.
+Zeit nach der vierten Optimierung: 3,4s (0,01 weniger als vorher)

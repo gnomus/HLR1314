@@ -1,0 +1,3 @@
+1.) Die Datei timescript.out sieht jedes mal anders aus weil jedes Mal andere Knoten in anderer Reihenfolge belegt werden. Es wird immer ein Knoten genommen der gerade frei ist. Da auch andere Jobs auf den Knoten laufen, ist das immer ein anderer. 
+
+2.)Nein, denn timescript wird mehrmals gestartet, würde die Datei in timescript erstellt werden würde für jeden Aufruf eine neue Datei erstellt und die alte überschrieben werden. Außerdem könnte es passieren, dass zwei timescript-prozesse gleichzeitig in die Datei schreiben wodurch diese inkonsistent wird.

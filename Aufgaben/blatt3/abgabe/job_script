@@ -2,7 +2,8 @@
 
 #SBATCH -p compute
 #SBATCH -N 4
-#SBATCH -n 4
+#SBATCH -n 16
 #SBATCH --output timescript.out
 
-srun timescript
+srun timescript >> timescript.out
+echo "fertig" > job-script.out
