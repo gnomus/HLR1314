@@ -1,3 +1,14 @@
+Aufgabe 1)
+1)
+Der Begriff "batch" stammt noch aus der Zeit der Lochkarten. Damals stand er für einen Stapel Lochkarten. Heutzutage steht er für verschiedene Jobs (Programme) die zu erledigen sind. "queue" bedeutet übersetzt warteschlange, somit ist "batch-queueing" nichts anderes als die warteschlangenverwaltung für Jobs. Hier werden einzelne Jobs in eine Warteschlange eingereiht um nacheinander bearbeitet zu werden (meistens auf einem Cluster)
+2)
+Jobverwaltung auf einem Cluster zur verteilung der Arbeitszeit.
+3.1)
+slurm
+3.2)
+scancel JOBID
+
+Aufgabe 2)
 1.) Die Datei timescript.out sieht jedes mal anders aus weil jedes Mal andere Knoten in anderer Reihenfolge belegt werden. Es wird immer ein Knoten genommen der gerade frei ist. Da auch andere Jobs auf den Knoten laufen, ist das immer ein anderer. 
 
 2.)Nein, denn timescript wird mehrmals gestartet, würde die Datei in timescript erstellt werden würde für jeden Aufruf eine neue Datei erstellt und die alte überschrieben werden. Außerdem könnte es passieren, dass zwei timescript-prozesse gleichzeitig in die Datei schreiben wodurch diese inkonsistent wird.
