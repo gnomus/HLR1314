@@ -193,7 +193,7 @@ calculate (void * opts)
 	int term_iteration = args->options->term_iteration;
 
 	/* initialize m1 and m2 depending on algorithm */
-	if (options->method == METH_JACOBI)
+	if (args->options->method == METH_JACOBI)
 	{
 		m1 = 0;
 		m2 = 1;
@@ -204,7 +204,7 @@ calculate (void * opts)
 		m2 = 0;
 	}
 
-	if (options->inf_func == FUNC_FPISIN)
+	if (args->options->inf_func == FUNC_FPISIN)
 	{
 		pih = PI * h;
 		fpisin = 0.25 * TWO_PI_SQUARE * h * h;
@@ -222,7 +222,7 @@ calculate (void * opts)
 		{
 			double fpisin_i = 0.0;
 
-			if (options->inf_func == FUNC_FPISIN)
+			if (args->options->inf_func == FUNC_FPISIN)
 			{
 				fpisin_i = fpisin * sin(pih * (double)i);
 			}
@@ -232,12 +232,12 @@ calculate (void * opts)
 			{
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
-				if (options->inf_func == FUNC_FPISIN)
+				if (args->options->inf_func == FUNC_FPISIN)
 				{
 					star += fpisin_i * sin(pih * (double)j);
 				}
 
-				if (options->termination == TERM_PREC || term_iteration == 1)
+				if (args->options->termination == TERM_PREC || term_iteration == 1)
 				{
 					pthread_mutex_lock(&maxresiduum_mutex);
 					residuum = Matrix_In[i][j] - star;
@@ -266,7 +266,7 @@ calculate (void * opts)
 		m2 = i;
 
 		/* check for stopping calculation, depending on termination method */
-		if (options->termination == TERM_PREC)
+		if (args->options->termination == TERM_PREC)
 		{
 			if ( args->maxresiduum < args->options->term_precision)
 			{
@@ -417,24 +417,24 @@ main (int argc, char** argv)
 		//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein
 		//argument an die threads übergeben werden kann
 		//es wird eine start und eine end-variable für jeden thread definiert
-		struct calculate_options calculate_options_thread = malloc(sizeof(struct calculate_options));
+		struct calculate_options* calculate_options_thread = malloc(sizeof(struct calculate_options));
 
 		calculate_options_thread->options = &options;
 		calculate_options_thread->arguments = &arguments;
 		calculate_options_thread->results = &results;
-		calculate_options_thread->maxresiduum = maxresiduum_pointer;                         /* maximum residuum value of a slave in iteration */
+		calculate_options_thread->maxresiduum = *maxresiduum_pointer;                         /* maximum residuum value of a slave in iteration */
 
 
-		calculate_options->start[i] = i*sizeof_block + rest;
+		calculate_options_thread->start = i*sizeof_block + rest;
 
-		if(i < ((N-1)%options->number))
+		if(i < ((N-1)%options.number))
 		{
-			calculate_options->ende = (i+1)*sizeof_block + 1 + rest;
+			calculate_options_thread->ende = (i+1)*sizeof_block + 1 + rest;
 			rest = rest + 1;
 		}
 		else
 		{
-			calculate_options->ende = (i+1)*sizeof_block + rest;
+			calculate_options_thread->ende = (i+1)*sizeof_block + rest;
 		}
 
 		pthread_create(&threads[i], NULL, calculate, (void *) &calculate_options_thread);
@@ -450,7 +450,7 @@ main (int argc, char** argv)
 	pthread_barrier_destroy(&while_barrier);
 	                                      /*  free memory     */
 	//changed: joine alle threads wieder zu einem masterthread
-	for(int i=0; i<options->number; i++)
+	for(uint64_t i=0; i < options.number; i++)
     {
 	  pthread_join(threads[i], NULL);
 	}
