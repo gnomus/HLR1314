@@ -64,7 +64,7 @@ struct calculation_results
 //changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein 
 //argument an die threads übergeben werden kann
 //es wird eine start und eine end-variable für jeden thread definiert
-	
+
 struct calculate_options
 {
 	struct options *options;
@@ -73,6 +73,7 @@ struct calculate_options
 	int start;
 	int ende;
 	double maxresiduum;
+	int threadid;
 };
 
 /* *************************** */

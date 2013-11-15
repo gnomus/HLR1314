@@ -174,7 +174,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 //gegeben werden kann
 static
 void
-calculate (void * opts)
+calculate (void* opts)
 {
 	//Variablen die für jeden thread privat sind
 	int i, j;                                   /* local variables for loops  */
@@ -182,7 +182,7 @@ calculate (void * opts)
 	double residuum;                            /* residuum of current iteration                  */
 	int m1, m2;                                 /* used as indices for old and new matrices       */
 
-        struct calculate_options* args  = (struct calculate_options*) opts;
+    struct calculate_options* args  = (struct calculate_options*) opts;
 
 	int const N = args->arguments->N;
 	double const h = args->arguments->h;
@@ -218,7 +218,7 @@ calculate (void * opts)
 		//changed: jeder thread bekommt einen start und einen endpunkt, so das hier jeder prozess
 		//nur seinen teil abarbeitet, insgesamt wird 0 bis N bearbeitet
 		/* over all rows */
-		for (i = args->start; i < args->ende; i++)
+		for (i = args->start; i <= args->ende; i++)
 		{
 			double fpisin_i = 0.0;
 
@@ -230,6 +230,14 @@ calculate (void * opts)
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
+				/*printf("---------\n");
+				printf("start: %i\n",args->start);
+				printf("end: %i\n",args->ende);
+				printf("N: %i\n",N);
+				printf("i: %i\n",i);
+				printf("j: %i\n",j);
+				printf("---------\n");*/
+
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 				if (args->options->inf_func == FUNC_FPISIN)
@@ -257,7 +265,9 @@ calculate (void * opts)
 		//	calculate_options->maxresiduum = maxresiduum;
 		//}
 
-		args->results->stat_iteration++;
+		//Changed: Only let one Thread count the Iterations
+		if (args->threadid == 0) args->results->stat_iteration++;
+
 		args->results->stat_precision = args->maxresiduum;
 
 		/* exchange m1 and m2 */
@@ -417,15 +427,15 @@ main (int argc, char** argv)
 		//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein
 		//argument an die threads übergeben werden kann
 		//es wird eine start und eine end-variable für jeden thread definiert
-		struct calculate_options* calculate_options_thread = malloc(sizeof(struct calculate_options));
+		struct calculate_options *calculate_options_thread = malloc(sizeof(struct calculate_options));
 
 		calculate_options_thread->options = &options;
 		calculate_options_thread->arguments = &arguments;
 		calculate_options_thread->results = &results;
-		calculate_options_thread->maxresiduum = *maxresiduum_pointer;                         /* maximum residuum value of a slave in iteration */
+		calculate_options_thread->maxresiduum = *maxresiduum_pointer;   /* maximum residuum value of a slave in iteration */
+		calculate_options_thread->threadid = i;
 
-
-		calculate_options_thread->start = i*sizeof_block + rest;
+		calculate_options_thread->start = i*sizeof_block + rest + 1;
 
 		if(i < ((N-1)%options.number))
 		{
@@ -436,8 +446,17 @@ main (int argc, char** argv)
 		{
 			calculate_options_thread->ende = (i+1)*sizeof_block + rest;
 		}
+		printf("i: %i\n", i);
+		printf("Start: %i\n", calculate_options_thread->start);
+		printf("End: %i\n", calculate_options_thread->ende);
 
-		pthread_create(&threads[i], NULL, calculate, (void *) &calculate_options_thread);
+		pthread_create(&threads[i], NULL, calculate, (void *) calculate_options_thread);
+	}
+	                                      /*  free memory     */
+	//changed: joine alle threads wieder zu einem masterthread
+	for(uint64_t i=0; i < options.number; i++)
+    {
+	  pthread_join(threads[i], NULL);
 	}
 	                                    /*  solve the equation  */
 	gettimeofday(&comp_time, NULL);                   /*  stop timer          */
@@ -446,14 +465,8 @@ main (int argc, char** argv)
 	DisplayMatrix(&arguments, &results, &options);
 
 	freeMatrices(&arguments);
-
 	pthread_barrier_destroy(&while_barrier);
-	                                      /*  free memory     */
-	//changed: joine alle threads wieder zu einem masterthread
-	for(uint64_t i=0; i < options.number; i++)
-    {
-	  pthread_join(threads[i], NULL);
-	}
+
 
 	return 0;
 }
