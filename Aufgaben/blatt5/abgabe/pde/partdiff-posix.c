@@ -173,7 +173,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 //changed: calculate nimmt nurnoch eine struct entgegen, die alle parameter enthält weil den threads nur ein argument
 //gegeben werden kann
 static
-void
+void*
 calculate (void* opts)
 {
 	//Variablen die für jeden thread privat sind
@@ -230,14 +230,6 @@ calculate (void* opts)
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-				/*printf("---------\n");
-				printf("start: %i\n",args->start);
-				printf("end: %i\n",args->ende);
-				printf("N: %i\n",N);
-				printf("i: %i\n",i);
-				printf("j: %i\n",j);
-				printf("---------\n");*/
-
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 				if (args->options->inf_func == FUNC_FPISIN)
@@ -446,10 +438,6 @@ main (int argc, char** argv)
 		{
 			calculate_options_thread->ende = (i+1)*sizeof_block + rest;
 		}
-		printf("i: %i\n", i);
-		printf("Start: %i\n", calculate_options_thread->start);
-		printf("End: %i\n", calculate_options_thread->ende);
-
 		pthread_create(&threads[i], NULL, calculate, (void *) calculate_options_thread);
 	}
 	                                      /*  free memory     */
