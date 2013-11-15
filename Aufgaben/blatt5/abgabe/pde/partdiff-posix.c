@@ -41,7 +41,7 @@ struct timeval start_time;       /* time when program started                   
 struct timeval comp_time;        /* time when calculation completed                */
 //changed: erstell mutex für das maxresiduum
 pthread_mutex_t maxresiduum_mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_barrier_t while_barrier; 
+pthread_barrier_t while_barrier;
 
 
 /* ************************************************************************ */
@@ -170,7 +170,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
-//changed: calculate nimmt nurnoch eine struct entgegen, die alle parameter enthält weil den threads nur ein argument 
+//changed: calculate nimmt nurnoch eine struct entgegen, die alle parameter enthält weil den threads nur ein argument
 //gegeben werden kann
 static
 void
@@ -215,7 +215,7 @@ calculate (void * opts)
 		double** Matrix_Out = args->arguments->Matrix[m1];
 		double** Matrix_In  = args->arguments->Matrix[m2];
 
-		//changed: jeder thread bekommt einen start und einen endpunkt, so das hier jeder prozess 
+		//changed: jeder thread bekommt einen start und einen endpunkt, so das hier jeder prozess
 		//nur seinen teil abarbeitet, insgesamt wird 0 bis N bearbeitet
 		/* over all rows */
 		for (i = args->start; i < args->ende; i++)
@@ -409,28 +409,28 @@ main (int argc, char** argv)
 	double maxresiduum = 0;
 	double *maxresiduum_pointer = &maxresiduum;
 	int sizeof_block = (int) (N-1)/options.number;
-	int rest = 0; 
+	int rest = 0;
 	//changed: erstellen der threads, jeder thread bekommt als id die adresse von dem element des arrays in dem er steht
 	//die gesamte funktion calculate wird aufgeteilt                  /*  start timer         */
 	for(uint64_t i = 0; i < options.number; i++)
 	{
-		//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein 
+		//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein
 		//argument an die threads übergeben werden kann
 		//es wird eine start und eine end-variable für jeden thread definiert
 		struct calculate_options calculate_options_thread = malloc(sizeof(struct calculate_options));
-		
+
 		calculate_options_thread->options = &options;
 		calculate_options_thread->arguments = &arguments;
 		calculate_options_thread->results = &results;
 		calculate_options_thread->maxresiduum = maxresiduum_pointer;                         /* maximum residuum value of a slave in iteration */
-		
 
-		calculate_options->start[i] = i*sizeof_block + rest; 
+
+		calculate_options->start[i] = i*sizeof_block + rest;
 
 		if(i < ((N-1)%options->number))
 		{
 			calculate_options->ende = (i+1)*sizeof_block + 1 + rest;
-			rest = rest + 1; 
+			rest = rest + 1;
 		}
 		else
 		{
@@ -438,14 +438,14 @@ main (int argc, char** argv)
 		}
 
 		pthread_create(&threads[i], NULL, calculate, (void *) &calculate_options_thread);
-	}  
+	}
 	                                    /*  solve the equation  */
 	gettimeofday(&comp_time, NULL);                   /*  stop timer          */
 
 	displayStatistics(&arguments, &results, &options);
 	DisplayMatrix(&arguments, &results, &options);
 
-	freeMatrices(&arguments); 
+	freeMatrices(&arguments);
 
 	pthread_barrier_destroy(&while_barrier);
 	                                      /*  free memory     */
