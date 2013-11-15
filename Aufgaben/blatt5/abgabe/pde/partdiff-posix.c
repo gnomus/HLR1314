@@ -27,24 +27,10 @@
 #include <math.h>
 #include <malloc.h>
 #include <sys/time.h>
+#include <pthread.h>
 
-#include "partdiff-posix.h"
+#include "partdiff-seq.h"
 
-struct calculation_arguments
-{
-	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
-	uint64_t  num_matrices;   /* number of matrices                             */
-	double    h;              /* length of a space between two lines            */
-	double    ***Matrix;      /* index matrix used for addressing M             */
-	double    *M;             /* two matrices with real values                  */
-};
-
-struct calculation_results
-{
-	uint64_t  m;
-	uint64_t  stat_iteration; /* number of current iteration                    */
-	double    stat_precision; /* actual precision of all slaves in iteration    */
-};
 
 /* ************************************************************************ */
 /* Global variables                                                         */
@@ -53,6 +39,9 @@ struct calculation_results
 /* time measurement variables */
 struct timeval start_time;       /* time when program started                      */
 struct timeval comp_time;        /* time when calculation completed                */
+//changed: erstell mutex für das maxresiduum
+pthread_mutex_t maxresiduum_mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_barrier_t while_barrier; 
 
 
 /* ************************************************************************ */
@@ -181,15 +170,18 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
+//changed: calculate nimmt nurnoch eine struct entgegen, die alle parameter enthält weil den threads nur ein argument 
+//gegeben werden kann
 static
 void
-calculate (struct calculation_arguments const* arguments, struct calculation_results *results, struct options const* options)
+calculate (void *struct calculate_options)
 {
+	//Variablen die für jeden thread privat sind
 	int i, j;                                   /* local variables for loops  */
-	int m1, m2;                                 /* used as indices for old and new matrices       */
 	double star;                                /* four times center value minus 4 neigh.b values */
 	double residuum;                            /* residuum of current iteration                  */
-	double maxresiduum;                         /* maximum residuum value of a slave in iteration */
+	int m1, m2;                                 /* used as indices for old and new matrices       */
+
 
 	int const N = arguments->N;
 	double const h = arguments->h;
@@ -222,10 +214,10 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		double** Matrix_Out = arguments->Matrix[m1];
 		double** Matrix_In  = arguments->Matrix[m2];
 
-		maxresiduum = 0;
-
+		//changed: jeder thread bekommt einen start und einen endpunkt, so das hier jeder prozess 
+		//nur seinen teil abarbeitet, insgesamt wird 0 bis N bearbeitet
 		/* over all rows */
-		for (i = 1; i < N; i++)
+		for (i = calculate_options->start[i]; i < calculate_options->ende[i]; i++)
 		{
 			double fpisin_i = 0.0;
 
@@ -255,8 +247,17 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 			}
 		}
 
+		//changed: globales maxresiduum aus lokalen maxresiduums berechnen
+		//mutex damit die threads nicht gleichzeitig prüfen und schreiben
+		pthread_mutex_lock(maxresiduum_mutex);
+		if (maxresiduum > calculate_options->maxresiduum)
+		{
+			calculate_options->maxresiduum = maxresiduum;
+		}
+		pthread_mutex_unlock(maxresiduum_mutex);
+
 		results->stat_iteration++;
-		results->stat_precision = maxresiduum;
+		results->stat_precision = calculate_options->maxresiduum;
 
 		/* exchange m1 and m2 */
 		i = m1;
@@ -266,7 +267,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		/* check for stopping calculation, depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
-			if (maxresiduum < options->term_precision)
+			if ( calculate_options->maxresiduum < options->term_precision)
 			{
 				term_iteration = 0;
 			}
@@ -275,9 +276,16 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		{
 			term_iteration--;
 		}
+
+		//changed: barrier eingefügt
+		pthread_barrier_wait(&while_barrier);
 	}
 
 	results->m = m2;
+
+	//changed: sorgt dafür dass die threads beendet werden
+	pthread_exit(NULL);
+
 }
 
 /* ************************************************************************ */
@@ -384,17 +392,67 @@ main (int argc, char** argv)
 
 	initVariables(&arguments, &results, &options);           /* ******************************************* */
 
+	int N = arguments->N;
+
+	pthread_barrier_init(&while_barrier, NULL, options->number);
+
+	//changed: array für die threads erstellen
+	pthread_t *threads = malloc(sizeof(pthread_t)*options->number);
+
+
 	allocateMatrices(&arguments);        /*  get and initialize variables and matrices  */
 	initMatrices(&arguments, &options);            /* ******************************************* */
 
-	gettimeofday(&start_time, NULL);                   /*  start timer         */
-	calculate(&arguments, &results, &options);                                      /*  solve the equation  */
+	gettimeofday(&start_time, NULL);
+
+	double maxresiduum = 0;
+	double *maxresiduum_pointer = &maxresiduum;
+	int sizeof_block = (int) (N-1)/options->number;
+	int rest = 0; 
+	//changed: erstellen der threads, jeder thread bekommt als id die adresse von dem element des arrays in dem er steht
+	//die gesamte funktion calculate wird aufgeteilt                  /*  start timer         */
+	for(int i = 0, i < options->number, i++)
+	{
+		//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein 
+		//argument an die threads übergeben werden kann
+		//es wird eine start und eine end-variable für jeden thread definiert
+		struct calculate_options calculate_options_thread = malloc(sizeof(calculate_options))
+		
+		calculate_options_thread->options = &options;
+		calculate_options_thread->arguments = &arguments;
+		calculate_options_thread->results = &results;
+		calculate_options_thread->maxresiduum = maxresiduum_pointer;                         /* maximum residuum value of a slave in iteration */
+		
+
+		calculate_options->start[i] = i*sizeof_block + rest; 
+
+		if(i < ((N-1)%options->number))
+		{
+			calculate_options->ende = (i+1)*sizeof_block + 1 + rest;
+			rest = rest + 1; 
+		}
+		else
+		{
+			calculate_options->ende = (i+1)*sizeof_block + rest;
+		}
+
+		pthread_create(&threads[i], NULL, calculate, (void *) &calculate_options_thread);
+	}  
+	                                    /*  solve the equation  */
 	gettimeofday(&comp_time, NULL);                   /*  stop timer          */
 
 	displayStatistics(&arguments, &results, &options);
 	DisplayMatrix(&arguments, &results, &options);
 
-	freeMatrices(&arguments);                                       /*  free memory     */
+	freeMatrices(&arguments); 
+
+	pthread_barrier_destroy(&while_barrier);
+	                                      /*  free memory     */
+	//changed: joine alle threads wieder zu einem masterthread
+	for(int i=0; i<options->number; i++)
+    {
+	  pthread_join(threads[i], NULL);
+	}
 
 	return 0;
 }

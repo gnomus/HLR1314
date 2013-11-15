@@ -80,7 +80,7 @@
 #include <inttypes.h>
 #include <string.h>
 
-#include "partdiff-posix.h"
+#include "partdiff-seq.h"
 
 static
 void

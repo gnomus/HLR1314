@@ -45,6 +45,36 @@ struct options
 	double   term_precision; /* terminate if precision reached                 */
 };
 
+struct calculation_arguments
+{
+	uint64_t  N;              /* number of spaces between lines (lines=N+1)     */
+	uint64_t  num_matrices;   /* number of matrices                             */
+	double    h;              /* length of a space between two lines            */
+	double    ***Matrix;      /* index matrix used for addressing M             */
+	double    *M;             /* two matrices with real values                  */
+};
+
+struct calculation_results
+{
+	uint64_t  m;
+	uint64_t  stat_iteration; /* number of current iteration                    */
+	double    stat_precision; /* actual precision of all slaves in iteration    */
+};
+
+//changed: fasse alle argumente für die threads in einer struct zusammen weil nur ein 
+//argument an die threads übergeben werden kann
+//es wird eine start und eine end-variable für jeden thread definiert
+	
+struct calculate_options
+{
+	struct options *options;
+	struct calculation_arguments *arguments;
+	struct calculation_results *results;
+	int start;
+	int ende;
+	double maxresiduum; 
+};
+
 /* *************************** */
 /* Some function declarations. */
 /* *************************** */
