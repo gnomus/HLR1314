@@ -226,7 +226,7 @@ calculate (struct calculation_arguments const* arguments, struct calculation_res
 		maxresiduum = 0;
 
 		/* over all rows */
-        #pragma omp parallel for private(j,star) reduction(max:maxresiduum)
+        #pragma omp parallel for private(i, j,star, residuum) reduction(max:maxresiduum)
 		for (i = 1; i < N; i++)
 		{
 			double fpisin_i = 0.0;
