@@ -242,7 +242,7 @@ calculate (void* opts)
 					pthread_mutex_lock(&maxresiduum_mutex);
 					residuum = Matrix_In[i][j] - star;
 					residuum = (residuum < 0) ? -residuum : residuum;
-					args->maxresiduum = (residuum < args->maxresiduum) ? args->maxresiduum : residuum;
+					*args->maxresiduum = (residuum < *args->maxresiduum) ? *args->maxresiduum : residuum;
 					pthread_mutex_unlock(&maxresiduum_mutex);
 				}
 
@@ -260,7 +260,7 @@ calculate (void* opts)
 		//Changed: Only let one Thread count the Iterations
 		if (args->threadid == 0) args->results->stat_iteration++;
 
-		args->results->stat_precision = args->maxresiduum;
+		args->results->stat_precision = *args->maxresiduum;
 
 		/* exchange m1 and m2 */
 		i = m1;
@@ -270,7 +270,7 @@ calculate (void* opts)
 		/* check for stopping calculation, depending on termination method */
 		if (args->options->termination == TERM_PREC)
 		{
-			if ( args->maxresiduum < args->options->term_precision)
+			if ( *args->maxresiduum < args->options->term_precision)
 			{
 				term_iteration = 0;
 			}
@@ -424,7 +424,7 @@ main (int argc, char** argv)
 		calculate_options_thread->options = &options;
 		calculate_options_thread->arguments = &arguments;
 		calculate_options_thread->results = &results;
-		calculate_options_thread->maxresiduum = *maxresiduum_pointer;   /* maximum residuum value of a slave in iteration */
+		calculate_options_thread->maxresiduum = maxresiduum_pointer;   /* maximum residuum value of a slave in iteration */
 		calculate_options_thread->threadid = i;
 
 		calculate_options_thread->start = i*sizeof_block + rest + 1;

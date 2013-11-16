@@ -72,7 +72,7 @@ struct calculate_options
 	struct calculation_results *results;
 	int start;
 	int ende;
-	double maxresiduum;
+	double *maxresiduum;
 	int threadid;
 };
 
