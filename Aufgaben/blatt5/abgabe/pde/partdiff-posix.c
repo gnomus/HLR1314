@@ -230,7 +230,6 @@ calculate (void* opts)
 			/* over all columns */
 			for (j = 1; j < N; j++)
 			{
-
 				star = 0.25 * (Matrix_In[i-1][j] + Matrix_In[i][j-1] + Matrix_In[i][j+1] + Matrix_In[i+1][j]);
 
 				if (args->options->inf_func == FUNC_FPISIN)
