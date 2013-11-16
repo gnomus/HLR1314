@@ -1,0 +1,71 @@
+\documentclass{scrartcl}
+
+\usepackage[ngerman]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{tikz}
+\usepackage{pgfplots}
+
+\title{Leistungsanalyse Blatt 5 - POSIX Threads}
+\author{Felix Favre, Jennifer Nissley}
+
+\begin{document}
+\maketitle
+\section{Aufwand}
+\begin{description}
+\item{\textbf{Coding}} 6-8 Stunden
+\item{\textbf{Fehlersuche}} 2-3 Stunden
+\item{\textbf{Leistungsanalyse} 1 Stunde
+\end{description}
+\section{Diagramme}
+Das mit pthreads paralellisierte Programm wurde auf dem Cluster in den verschiedenstens Ausführungen getestet. Alle Aufrufe fanden mit 512 Interlines und 1024 Iterationen statt.
+\begin{enumerate}
+    \item Originale Sequenzielle Version mit 1 Thread auf den West Knoten
+    \item Posix Version mit 1, 2, ... , 11, 12 Threads auf den West Knoten
+    \item Posix Version mit 24, 48 Threads auf dem magny Knoten
+\end{enumerate}
+\subsection{Testlauf 1}
+\begin{tikzpicture}
+\begin{axis}[
+ybar,
+enlargelimits=.15,
+symbolic x coords={Seq,1,2,3,4,5,6,7,8,9,10,11,12,24,48},
+xtick=data,
+nodes near coords,
+width=\textwidth
+]
+\addplot coordinates {(Seq,655.5) (1,671.2) (2,326.3) (3, 219.1) (4, 165) (5, 135.2) (6, 110.9) (7, 95.4) (8, 83.8) (9, 75) (10, 67.7) (11, 61.9) (12, 57.3) (24, 59.8) (48, 65.5)};
+\end{axis}
+\end{tikzpicture}
+
+\subsection{Testlauf 2}
+\begin{tikzpicture}
+\begin{axis}[
+ybar,
+enlargelimits=.15,
+symbolic x coords={Seq,1,2,3,4,5,6,7,8,9,10,11,12,24,48},
+xtick=data,
+nodes near coords,
+width=\textwidth
+]
+\addplot coordinates {(Seq,653.9) (1,644.8) (2,326.6) (3, 217.9) (4, 164.9) (5, 136.6) (6, 110.9) (7, 96.2) (8, 83.8) (9, 77) (10, 67.8) (11, 61.9) (12, 57.9) (24, 59.1) (48, 66.5)};
+\end{axis}
+\end{tikzpicture}
+
+\subsection{Testlauf 3}
+\begin{tikzpicture}
+\begin{axis}[
+ybar,
+enlargelimits=.15,
+symbolic x coords={Seq,1,2,3,4,5,6,7,8,9,10,11,12,24,48},
+xtick=data,
+nodes near coords,
+width=\textwidth
+]
+\addplot coordinates {(Seq,653.1) (1,645.2) (2,326.2) (3, 217.5) (4, 165) (5, 133.3) (6, 110.8) (7, 96.3) (8, 83.9) (9, 74.9) (10, 67.9) (11, 62) (12, 57.1) (24, 60.1) (48, 66.1)};
+\end{axis}
+\end{tikzpicture}
+\section{Analyse}
+Wie man in allen 3 Diagrammen gut erkennen kann, skaliert die von uns mit pthreads paralellisierte Varieande des partdiff Programmes relativ gut mit der Anzahl der Threads. Hierbei fällt auf, dass eine mehr als 11-Fache Geschwindigkeitssteigerung bei 12 Thread erziehlt werden konnte.\\
+Lediglich im höheren Threadanzahl-Bereich skaliert das Programm nicht mehr so gut. Vermutlich ist hier der Overhead durch das Syncronisieren der Prozesse schlichtweg zu groß. So kann man erkennen, dass der selbe Programmaufruf mit 12 Threads im Schnitt 3 Sekunden schneller als mit 24 Threads und sogar fast 10 Sekunden schneller als mit 48 Threads war.
+
+\end{document}
