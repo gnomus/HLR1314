@@ -427,7 +427,12 @@ main (int argc, char** argv)
 		calculate_options_thread->maxresiduum = maxresiduum_pointer;   /* maximum residuum value of a slave in iteration */
 		calculate_options_thread->threadid = i;
 
-		calculate_options_thread->start = i*sizeof_block + rest + 1;
+		calculate_options_thread->start = i*sizeof_block + rest;
+
+		if (i == 0)
+		{
+			calculate_options_thread->start++;
+		}
 
 		if(i < ((N-1)%options.number))
 		{
