@@ -29,7 +29,7 @@ int main(int argc, char const **argv)
 
  		MPI_Send((void *) ausgabe, 1, MPI_CHAR, 0, 0, MPI_COMM_WORLD)
 	}
-  	
+
  	//Prozess 0 gibt den String aus
   	//Nach Rang der Prozesse geordnet
  	if (world_rank == 0)
@@ -42,7 +42,6 @@ int main(int argc, char const **argv)
 	}
 
   	//Prozesse beenden erst wenn alle Ausgaben fertig sind
-  	
   	MPI_Barrier(MPI_COMM_WORLD);
 
   	//Rang X beendet jetzt!
