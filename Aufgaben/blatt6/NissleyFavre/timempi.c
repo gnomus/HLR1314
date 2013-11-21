@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <mpi.h>
-
+#include <unistd.h>
+#include <sys/time.h>
 
 int main(int argc, char const **argv)
 {
@@ -21,17 +22,19 @@ int main(int argc, char const **argv)
   	MPI_Get_processor_name(processor_name, &name_len);
 
 
-  	//Prozess 1-n erzeugen HOSTNAME: TIMESTAMP als string und 
+  	//Prozess 1-n erzeugen HOSTNAME: TIMESTAMP als string und
   	//übergeben diesen an Prozess 0
   	if (world_rank != 0)
   	{
-  		char *hostname = gethostname();
+      char hostname[128];
+      gethostname(hostname, sizeof hostname);
+
  		char *timestamp = gettimeofday();
  		char *ausgabe = hostname + ":" + timestamp;
 
  		MPI_Send((void *) ausgabe, int count, MPI_Datatype datatype, 0, int tag, MPI_Comm communicator)
 	}
-  	
+
  	//Prozess 0 gibt den String aus
   	//Nach Rang der Prozesse geordnet
  	if (world_rank == 0)
@@ -44,8 +47,8 @@ int main(int argc, char const **argv)
 	}
 
   	//Prozesse beenden erst wenn alle Ausgaben fertig sind
-  	
-  	MPI Barrier();
+
+  	MPI_Barrier(MPI_COMM_WORLD);
 
   	//Rang X beendet jetzt!
   	printf("Rang %d beendet jetzt\n", world_rank);
