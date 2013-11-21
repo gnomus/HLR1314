@@ -96,6 +96,7 @@ printf("Rang %d waiting at Barrier\n", world_rank);
   MPI_Barrier(MPI_COMM_WORLD);
 printf("Rang %d hopped over Barrier\n", world_rank);
 
+
   	//Rang X beendet jetzt!
 printf("Rang %d beendet jetzt\n", world_rank);
 
