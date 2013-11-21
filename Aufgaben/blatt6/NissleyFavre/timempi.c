@@ -3,6 +3,7 @@
 #include <mpi.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 #include <malloc.h>
 
 const int HOSTNAME_WITH_TIME_MESSAGE_TAG= 42;
@@ -38,16 +39,17 @@ int main(int argc, char **argv)
 
   //Hostname Type
   MPI_Type_contiguous(HOSTNAME_LENGTH, MPI_CHAR, &MPI_HOSTNAME);
+  MPI_Type_commit(&MPI_HOSTNAME);
 
   //Timeval Type
-  int timeval_blocklengths[2] = {4,4};
-  MPI_Datatype timeval_subtypes[2] = {MPI_LONG, MPI_LONG};
+  int timeval_blocklengths[2] = {8,8};
+  MPI_Datatype timeval_subtypes[2] = {MPI_LONG_LONG, MPI_LONG_LONG};
   MPI_Aint timeval_offsets[2];
 
   timeval_offsets[0] = offsetof(struct timeval, tv_sec);
   timeval_offsets[1] = offsetof(struct timeval, tv_usec);
 
-  MPI_Type_struct(1, timeval_blocklengths, timeval_offsets, timeval_subtypes, &MPI_TIMEVAL);
+  MPI_Type_create_struct(1, timeval_blocklengths, timeval_offsets, timeval_subtypes, &MPI_TIMEVAL);
   MPI_Type_commit(&MPI_TIMEVAL);
 
   //Hostname with Time Type
@@ -58,21 +60,18 @@ int main(int argc, char **argv)
   hostname_with_time_offsets[0] = offsetof(struct hostname_with_time, tv);
   hostname_with_time_offsets[1] = offsetof(struct hostname_with_time, hostname);
 
-  MPI_Type_struct(1, hostname_with_time_blocklengths, hostname_with_time_offsets, hostname_with_time_subtypes, &MPI_HOSTNAME_WITH_TIME);
+  MPI_Type_create_struct(1, hostname_with_time_blocklengths, hostname_with_time_offsets, hostname_with_time_subtypes, &MPI_HOSTNAME_WITH_TIME);
   MPI_Type_commit(&MPI_HOSTNAME_WITH_TIME);
 
   if (world_rank != MASTER_PROCESS)
   {
-    sleep(1);
-
     struct hostname_with_time *p = (struct hostname_with_time*) malloc(sizeof (struct hostname_with_time));
 
     gethostname(p->hostname, sizeof(p->hostname));
 
     gettimeofday(&(p->tv), NULL);
 
-    printf("%d Sending now\n",world_rank);
-    MPI_Send((void *) &p, 1, MPI_HOSTNAME_WITH_TIME, MASTER_PROCESS, HOSTNAME_WITH_TIME_MESSAGE_TAG, MPI_COMM_WORLD);
+    MPI_Send((void *) p, 1, MPI_HOSTNAME_WITH_TIME, MASTER_PROCESS, HOSTNAME_WITH_TIME_MESSAGE_TAG, MPI_COMM_WORLD);
   }
 
  	//Prozess 0 gibt den String aus
@@ -82,26 +81,35 @@ int main(int argc, char **argv)
    for (int i = 1; i < world_size; ++i)
    {
     void *buf = malloc(sizeof(struct hostname_with_time));
-    printf("%d Waiting for %d\n", world_rank,i);
-    //MPI_Status *status;
+    printf("%d Waiting for Message from Thread %d\n", world_rank,i);
     MPI_Recv(buf, 1, MPI_HOSTNAME_WITH_TIME, i, HOSTNAME_WITH_TIME_MESSAGE_TAG, MPI_COMM_WORLD, NULL);
-    printf("%d Bla2\n", world_rank);
     struct hostname_with_time *message = (struct hostname_with_time*) buf;
+
+    //Ausgabe
+    // time_t nowtime;
+    // struct tm *nowtm;
+    // nowtime = message->tv.tv_sec;
+    // nowtm = localtime(&nowtime);
+    // char tmbuf[64], buff[64];
+
+    // strftime(tmbuf, sizeof tmbuf, "%Y-%m-%d %H:%M:%S", nowtm);
+    // snprintf(buff, sizeof buff, "%s.%06d", tmbuf, message->tv.tv_usec);
+
+    printf("%li\n", message->tv.tv_sec);
+    printf("%li\n", message->tv.tv_usec);
     printf("%s\n", message->hostname);
   }
 }
 
   //Prozesse beenden erst wenn alle Ausgaben fertig sind
-printf("Rang %d waiting at Barrier\n", world_rank);
-  MPI_Barrier(MPI_COMM_WORLD);
-printf("Rang %d hopped over Barrier\n", world_rank);
+MPI_Barrier(MPI_COMM_WORLD);
 
 
   	//Rang X beendet jetzt!
 printf("Rang %d beendet jetzt\n", world_rank);
 
   	//Beende die MPI-Umgebung
-    MPI_Finalize();
+MPI_Finalize();
 
-    return 0;
+return 0;
 }
