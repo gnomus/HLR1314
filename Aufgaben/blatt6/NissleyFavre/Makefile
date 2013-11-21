@@ -6,20 +6,22 @@ CFLAGS = -std=c99 -pedantic -Wall -Wextra -O2 -ggdb
 LFLAGS = $(CFLAGS)
 LIBS   = -lm
 
-OBJS = timempi.o
-
 # Rule to create *.o from *.c
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c
 
 # Targets ...
-all: timempi
+all: timempi timempi2
 
-timempi: $(OBJS) Makefile
-	$(CC) $(LFLAGS) -o $@ $(OBJS) $(LIBS)
+timempi: timempi.o Makefile
+	$(CC) $(LFLAGS) -o $@ timempi.o $(LIBS)
+
+timempi2: timempi2.o Makefile
+	$(CC) $(LFLAGS) -o $@ timempi2.o $(LIBS)
 
 clean:
 	$(RM) *.o *~
 
 timempi.o: timempi.c Makefile
+timempi2.o: timempi2.c Makefile
 

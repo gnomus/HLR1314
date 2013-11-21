@@ -5,6 +5,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <malloc.h>
+#include <limits.h>
 
 const int HOSTNAME_WITH_TIME_MESSAGE_TAG = 42;
 const int MASTER_PROCESS = 0;
@@ -32,6 +33,9 @@ int main(int argc, char **argv)
     exit(-1);
   }
 
+  //Moved here, because we need it for the reduce
+  struct timeval tv;
+
   //We are not the Master Process. Let's do this.
   if (world_rank != MASTER_PROCESS)
   {
@@ -40,7 +44,6 @@ int main(int argc, char **argv)
     gethostname(hostname, sizeof(hostname));
 
     //What Time is it?
-    struct timeval tv;
     time_t nowtime;
     struct tm *nowtm;
     char tmbuf[64], tbuf[64];
@@ -59,8 +62,8 @@ int main(int argc, char **argv)
 
     //Let's send this to the Master Process!
     MPI_Send((void *) buf, HOSTNAME_WITH_TIME_MESSAGE_SIZE, MPI_CHAR, MASTER_PROCESS, HOSTNAME_WITH_TIME_MESSAGE_TAG, MPI_COMM_WORLD);
-
   }
+
 
   //We are the master Process. Let's do something else
   if (world_rank == MASTER_PROCESS)
@@ -79,6 +82,22 @@ int main(int argc, char **argv)
     //Don't need those Ressources anymore
     free(buf);
   }
+
+  //Let's not falsify the result, let the Masterprocess send LONG_MAX
+  long sendbuf = (world_rank == MASTER_PROCESS) ? LONG_MAX : tv.tv_usec;
+  //We need some allocated Memory for the Result
+  void *recvbuf = malloc(sizeof(long));
+
+  //The Reduce
+  MPI_Reduce(&sendbuf, recvbuf, 1, MPI_LONG_LONG, MPI_MIN, MASTER_PROCESS, MPI_COMM_WORLD);
+
+  if (world_rank == MASTER_PROCESS)
+  {
+    printf("%li\n", *((long*)recvbuf));
+  }
+  //Free Memory
+  free(recvbuf);
+
 
   //Let's be fair and wait for everyone :)
   MPI_Barrier(MPI_COMM_WORLD);
