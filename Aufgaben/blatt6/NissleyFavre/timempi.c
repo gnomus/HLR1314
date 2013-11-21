@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <mpi.h>
+#include <unistd.h>
+#include <time.h>
 
 
 int main(int argc, char const **argv)
@@ -15,37 +17,33 @@ int main(int argc, char const **argv)
   	int world_rank;
   	MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-  	//Name des Prozessors
-  	char processor_name[MPI_MAX_PROCESSOR_NAME];
-  	int name_len;
-  	MPI_Get_processor_name(processor_name, &name_len);
-
-
   	//Prozess 1-n erzeugen HOSTNAME: TIMESTAMP als string und 
   	//übergeben diesen an Prozess 0
   	if (world_rank != 0)
   	{
-  		char *hostname = gethostname();
- 		char *timestamp = gettimeofday();
+  		char *hostname;
+  		gethostname(hostname, sizeof(hostname));
+ 		char *timestamp; 
+ 		gettimeofday(timestamp, NULL);
  		char *ausgabe = hostname + ":" + timestamp;
 
- 		MPI_Send((void *) ausgabe, int count, MPI_Datatype datatype, 0, int tag, MPI_Comm communicator)
+ 		MPI_Send((void *) ausgabe, 1, MPI_CHAR, 0, 0, MPI_COMM_WORLD)
 	}
   	
  	//Prozess 0 gibt den String aus
   	//Nach Rang der Prozesse geordnet
  	if (world_rank == 0)
  	{
- 		for (int i = 0; i < world_size; ++i)
+ 		for (int i = 1; i < world_size; ++i)
  		{
-			MPI_Recv(ausgabe, int count, MPI_Datatype datatype, i, int tag, MPI_Comm communicator, MPI_Status* status);
+			MPI_Recv(ausgabe, 1, MPI_CHAR, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
  			printf("%s:%s\n",(char *) ausgabe);
  		}
 	}
 
   	//Prozesse beenden erst wenn alle Ausgaben fertig sind
   	
-  	MPI Barrier();
+  	MPI_Barrier(MPI_COMM_WORLD);
 
   	//Rang X beendet jetzt!
   	printf("Rang %d beendet jetzt\n", world_rank);
