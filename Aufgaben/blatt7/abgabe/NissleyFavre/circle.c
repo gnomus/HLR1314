@@ -10,6 +10,8 @@ int* init (int N, int bufsize, int count, int rest)
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+  printf("rank %i | N %i | bufsize %i | count %i | rest %i\n", rank, N, bufsize, count, rest);
+
   int *buf = (int *) malloc(sizeof(int) * bufsize);
 
   srand(time(NULL));
@@ -37,23 +39,34 @@ int
 main (int argc, char** argv)
 {
   unsigned *uN;
-  int N;
   int rank, world_size;
   int* buf;
 
-  if ((argc < 2) || (sscanf(argv[1], "%u", uN) != 1))
-  {
-    printf("Arguments error\n");
-    return EXIT_FAILURE;
-  }
-
-  N = *uN;
-
-  //CHANGED: Initialize MPI
+    //CHANGED: Initialize MPI
   MPI_Init(&argc, &argv);
   //CHANGED: Rank
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  if (argc < 2)
+  {
+    if (rank == MASTER_PROCESS) {
+      printf("Arguments error\n");
+    }
+    MPI_Finalize();
+    return EXIT_FAILURE;
+  }
+
+
+  if (sscanf(argv[1], "%u", uN) != 1) {
+    if (rank == MASTER_PROCESS) {
+      printf("Please specify Array length\n");
+    }
+    MPI_Finalize();
+    return EXIT_FAILURE;
+  }
+
+  int N = *uN;
 
   //Abbruch bei zu vielen Prozessen
   if(world_size > N)
@@ -82,7 +95,7 @@ main (int argc, char** argv)
 
   for (int i = 0; i < bufsize; i++)
   {
-    printf ("rank %i: %i\n", rank, buf[i]);
+    //printf ("rank %i: %i\n", rank, buf[i]);
   }
 
   circle(buf);
