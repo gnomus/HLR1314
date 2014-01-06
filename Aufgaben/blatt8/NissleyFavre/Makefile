@@ -1,12 +1,12 @@
 # Common definitions
-CC = gcc
+CC = mpicc
 
 # Compiler flags, paths and libraries
 CFLAGS = -std=c99 -pedantic -Wall -Wextra -O2 -ggdb
 LFLAGS = $(CFLAGS)
 LIBS   = -lm
 
-OBJS = partdiff-par.o askparams.o displaymatrix-mpi.o
+OBJS = partdiff-par.o askparams.o
 
 # Rule to create *.o from *.c
 .c.o:
@@ -15,14 +15,12 @@ OBJS = partdiff-par.o askparams.o displaymatrix-mpi.o
 # Targets ...
 all: partdiff-par
 
-partdiff-seq: $(OBJS) Makefile
+partdiff-par: $(OBJS) Makefile
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(LIBS)
 
 clean:
 	$(RM) *.o *~
 
-partdiff-seq.o: partdiff-par.c Makefile
+partdiff-par.o: partdiff-par.c Makefile
 
 askparams.o: askparams.c Makefile
-
-displaymatrix-mpi.o: displaymatrix-mpi.c Makefile
