@@ -89,11 +89,11 @@ initVariables (struct calculation_arguments* arguments, struct calculation_resul
 			rest_offset++;
 		}
 	}
-	// compute start rank + all offsets off the smaller ranks 
+	// compute start rank + all offsets off the smaller ranks
 	start = my_rank * lines_in_mymatrix + rest_offset;
 
 	//offset of my rank
-	if(my_rank < rest) 
+	if(my_rank < rest)
 	{
 		rest_offset++;
 	}
@@ -232,7 +232,7 @@ initMatrices (struct calculation_arguments* arguments, struct options const* opt
 				}
 			}
 			for (i = 0; i < lines_in_mymatrix; ++i)
-			{	
+			{
 				//initialise all the lines between the first and the last
 				Matrix[g][i][0] = 1.0 - (h * (i + start));
 				Matrix[g][i][N] = h * (i + start);
@@ -424,7 +424,7 @@ calculate_jacobi (struct calculation_arguments const* arguments, struct calculat
 			//wait until all messages to and from the next process are received
 			MPI_Waitall(2, requests_next, &s);
 		}
-	
+
 		/* check for stopping calculation, depending on termination method */
 		if (options->termination == TERM_PREC)
 		{
@@ -445,16 +445,17 @@ calculate_jacobi (struct calculation_arguments const* arguments, struct calculat
 
 	MPI_Allreduce(&maxresiduum, &maxresiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 	results->stat_precision = maxresiduum;
-	
+
 }
 
 /* ************************************************************************ */
 /* calculate: solves the equation                                           */
 /* ************************************************************************ */
 static
-void 
+void
 calculate_gauss (struct calculation_arguments const* arguments, struct calculation_results *results, struct options const* options)
 {
+	int aborted = 0;
 	int i, j;                                   /* local variables for loops  */
 	int m1, m2;                                 /* used as indices for old and new matrices       */
 	double star;                                /* four times center value minus 4 neigh.b values */
@@ -503,16 +504,14 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 			if (my_rank == 0)
 			{
 				MPI_Iprobe(number_of_processes - 1, abort_tag, MPI_COMM_WORLD, &message_received, &s);
-			} 
-			else 
+			}
+			else
 			{
 				MPI_Iprobe(my_rank -1, abort_tag, MPI_COMM_WORLD, &message_received, &s);
 			}
-			//changed: if you receive an abort-message: 
+			//changed: if you receive an abort-message:
 			if (message_received == 1)
 			{
-				printf("abort-message received from %d\n", my_rank);
-
 				if (my_rank == 0)
 				{
 					MPI_Recv(&abort_tag, 1, MPI_INT, number_of_processes - 1, abort_tag, MPI_COMM_WORLD, &s);
@@ -521,13 +520,12 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 				{
 					MPI_Recv(&abort_tag, 1, MPI_INT, my_rank - 1, abort_tag, MPI_COMM_WORLD, &s);
 				}
-
+				
 				term_iteration = 0;
 
 				if (my_rank < number_of_processes -1)
 				{
 					MPI_Send(&abort_tag, 1, MPI_INT, my_rank + 1, abort_tag, MPI_COMM_WORLD);
-					//MPI_Recv(Matrix_Out[lines_in_mymatrix - 1], N + 1, MPI_DOUBLE, my_rank + 1, 0, MPI_COMM_WORLD, &s);
 				}
 			}
 		}
@@ -536,12 +534,6 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 		if (my_rank > 0)
 		{
 			MPI_Recv(Matrix_Out[0], N + 1, MPI_DOUBLE, my_rank - 1, 1, MPI_COMM_WORLD, NULL);
-
-			if (term_iteration == 0)
-			{
-				printf("received my first line from rank %d\n", my_rank);
-			}
-
 			MPI_Irecv(&maxresiduum_global, 1, MPI_DOUBLE, my_rank - 1, 2, MPI_COMM_WORLD, &requests_before[1]);
 		}
 
@@ -615,10 +607,6 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 		if (my_rank < number_of_processes - 1)
 		{
 			MPI_Isend(Matrix_Out[lines_in_mymatrix - 2], N + 1, MPI_DOUBLE, my_rank + 1, 1, MPI_COMM_WORLD, &requests_next[0]);
-			if (term_iteration == 0)
-			{
-				printf("send the next process his first line\n");
-			}
 		}
 
 		results->stat_iteration++;
@@ -632,7 +620,9 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 		if (my_rank > 0 && term_iteration != 0)
 		{
 			//wait until process - 1 has received his last line and I have received the maxresiduum
-			MPI_Waitall(2, requests_before, &s);
+			// MPI_Wait(2, requests_before, &s);
+			MPI_Wait(&requests_before[0], &s);
+			MPI_Wait(&requests_before[1], &s);
 		}
 
 		if (my_rank < number_of_processes - 1)
@@ -642,7 +632,7 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 		}
 
 		//receive my last line from the next process
-		if (my_rank != number_of_processes - 1 && term_iteration != 0)
+		if (my_rank != number_of_processes - 1)// && term_iteration != 0)
 		{
 			MPI_Recv(Matrix_Out[lines_in_mymatrix - 1], N + 1, MPI_DOUBLE, my_rank + 1, 0, MPI_COMM_WORLD, &s);
 		}
@@ -654,13 +644,14 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 			MPI_Send(&maxresiduum_global, 1, MPI_DOUBLE, my_rank + 1, 2, MPI_COMM_WORLD);
 		}
 
-		//check for termination depending on the termination-method 
-		if (options->termination == TERM_PREC)
+		//check for termination depending on the termination-method
+		if (options->termination == TERM_PREC && !aborted)
 		{
-			if (my_rank == number_of_processes - 1 && term_iteration != 0)
+			if (my_rank == number_of_processes - 1)
 			{
 				if (maxresiduum_global < options->term_precision)
 				{
+					aborted = 1;
 					MPI_Send(&abort_tag, 1, MPI_INT, 0, abort_tag, MPI_COMM_WORLD);
 				}
 			}
@@ -674,6 +665,7 @@ calculate_gauss (struct calculation_arguments const* arguments, struct calculati
 	}
 
 	MPI_Allreduce(&maxresiduum, &maxresiduum, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+	results->stat_precision = maxresiduum;
 	results->m = m2;
 }
 
@@ -813,10 +805,11 @@ main (int argc, char** argv)
 	struct calculation_results results;
 
 	/* get parameters */
-	AskParams(&options, argc, argv);              /* ************************* */
+	//changed: Askparams needs the rank to print the first message only once
+    AskParams(&options, argc, argv, my_rank); 
 
 	initVariables(&arguments, &results, &options);           /* ******************************************* */
-	
+
 	allocateMatrices(&arguments);        /*  get and initialize variables and matrices  */
 
 	initMatrices(&arguments, &options);            /* ******************************************* */
@@ -825,14 +818,18 @@ main (int argc, char** argv)
 	if (options.method == METH_JACOBI)
 	{
 		calculate_jacobi(&arguments, &results, &options);
-	}   
+	}
 	else if (options.method == METH_GAUSS_SEIDEL)
 	{
 		calculate_gauss(&arguments, &results, &options);
 	}                              /*  solve the equation  */
 	gettimeofday(&comp_time, NULL);                   /*  stop timer          */
 
-	displayStatistics(&arguments, &results, &options);
+	if (my_rank == 0)
+	{
+		displayStatistics(&arguments, &results, &options);
+	}
+
 	DisplayMatrix("Result Matrix: \n", &arguments.Matrix[results.m][0][0], options.interlines , my_rank, number_of_processes, start + 1, end - 1);
 
 	freeMatrices(&arguments);                                       /*  free memory     */
